@@ -6,6 +6,8 @@ public class Percolation {
     private boolean grid[][];
     private WeightedQuickUnionUF wq;
     private int numOfOpenSites;
+    private int virtualTopSiteIndex;
+    private int virtualBottomSiteIndex;
 
     public Percolation(int N) {
         if(N <= 0) {
@@ -17,9 +19,12 @@ public class Percolation {
                 grid[i][j] = false;
             }
         }
-        wq = new WeightedQuickUnionUF(N * N);
+        wq = new WeightedQuickUnionUF(N * N + 4);
+        virtualTopSiteIndex = N * N;
+        virtualBottomSiteIndex = N * N + 2;
+        wq.union(virtualTopSiteIndex, N * N + 1);
+        wq.union(virtualBottomSiteIndex, N * N + 3);
         numOfOpenSites = 0;
-
     }
 
     private void validateSite(int row, int col) {
@@ -43,6 +48,11 @@ public class Percolation {
         validateSite(row, col);
         if(!isOpen(row, col)) { //open the site if not open
             grid[row][col] = true;
+            if(row == 0) { //top row attaches to virtual top root (of length two) first
+                wq.union(xyToID(row, col), virtualTopSiteIndex);
+            } else if(row == grid.length - 1) { //top row attaches to virtual bottom root (of length two) first
+                wq.union(xyToID(row, col), virtualBottomSiteIndex);
+            }
             if(isOpenNeighbour(row + 1, col)) {
                 wq.union(xyToID(row, col), xyToID(row + 1, col));
             }
@@ -67,14 +77,14 @@ public class Percolation {
 
     public boolean isFull(int row, int col) {
         validateSite(row, col);
-        for(int j = 0; j < grid.length; j++) { //Linear time
+        /*for(int j = 0; j < grid.length; j++) { //Linear time
             if(isOpen(0 , j)) { //check for open sites in top row to prevent comparing top row to itself
                 if(wq.connected(xyToID(row, col), xyToID(0, j))) {
                     return true;
                 }
             }
-        }
-        return false;
+        } */
+        return wq.connected(xyToID(row, col), virtualTopSiteIndex);
     }
 
     public int numberOfOpenSites() {
@@ -82,13 +92,14 @@ public class Percolation {
     }
 
     public boolean percolates() {
-        for(int i = 0; i < grid.length; i++) { //Quadratic time
+        /*for(int i = 0; i < grid.length; i++) { //Quadratic time
             for(int j = 0; j < grid.length; j++) {
                 if(wq.connected(xyToID(0, i), xyToID(grid.length - 1, j))) {
                     return true;
                 }
             }
         }
-        return false;
+        return false; */
+        return wq.connected(virtualBottomSiteIndex, virtualTopSiteIndex);
     }
 }

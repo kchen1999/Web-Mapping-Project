@@ -4,8 +4,8 @@ import edu.princeton.cs.algs4.StdRandom;
 import edu.princeton.cs.algs4.StdStats;
 
 public class PercolationStats {
-    double estimates[];
-    double numOfExperiments;
+    private double estimates[];
+    private double numOfExperiments;
     public PercolationStats(int N, int T, PercolationFactory pf) {
         if(N <= 0 || T <= 0) {
             throw new java.lang.IllegalArgumentException();
