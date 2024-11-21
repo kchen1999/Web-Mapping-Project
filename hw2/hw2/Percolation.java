@@ -44,27 +44,47 @@ public class Percolation {
         return row * grid.length + col;
     }
 
+    private void connectNeighbour(int row, int col, int nRow, int nCol) {
+        //if neighbour is full and current is last row, connect last row to bottom root
+        if (row == grid.length - 1 && isFull(nRow, nCol)) {
+            wq.union(xyToID(row, col), virtualBottomSiteIndex);
+        }
+        wq.union(xyToID(row, col), xyToID(nRow, nCol));
+    }
+
     public void open(int row, int col) {
         validateSite(row, col);
         if (!isOpen(row, col)) { //open the site if not open
             grid[row][col] = true;
             if (row == 0) { //top row attaches to virtual top root (of length two) first
                 wq.union(xyToID(row, col), virtualTopSiteIndex);
-            } else if (row == grid.length - 1 && isFull(row, col)) {
-                //bottom row attaches to virtual bottom root (of length two) first only if it is connected to the top
+            } /*else if (row == grid.length - 1) {
+                //bottom row attaches to virtual bottom root (of length two) first only if it is
+                connected to the top
                 wq.union(xyToID(row, col), virtualBottomSiteIndex);
-            }
+            } */
             if (isOpenNeighbour(row + 1, col)) {
-                wq.union(xyToID(row, col), xyToID(row + 1, col));
+                connectNeighbour(row, col, row + 1, col);
             }
             if (isOpenNeighbour(row - 1, col)) {
-                wq.union(xyToID(row, col), xyToID(row - 1, col));
+                connectNeighbour(row, col, row - 1, col);
             }
             if (isOpenNeighbour(row, col + 1)) {
-                wq.union(xyToID(row, col), xyToID(row, col + 1));
+                connectNeighbour(row, col, row, col + 1);
             }
             if (isOpenNeighbour(row, col - 1)) {
-                wq.union(xyToID(row, col), xyToID(row, col - 1));
+                connectNeighbour(row, col, row, col - 1);
+            }
+            //if current is connected to the top and neighbour is last row, connect bottom root
+            if (row == grid.length - 1) {
+                if (isFull(row, col) && !percolates()) {
+                    wq.union(xyToID(row, col), virtualBottomSiteIndex);
+                }
+            }
+            else if (row + 1 == grid.length - 1) {
+                if (isFull(row, col) && !percolates()) {
+                    wq.union(xyToID(row, col), virtualBottomSiteIndex);
+                }
             }
             numOfOpenSites++;
         }
@@ -80,7 +100,8 @@ public class Percolation {
         validateSite(row, col);
         return wq.connected(xyToID(row, col), virtualTopSiteIndex);
         /*for(int j = 0; j < grid.length; j++) { //Linear time
-            if(isOpen(0 , j)) { //check for open sites in top row to prevent comparing top row to itself
+            if(isOpen(0 , j)) { //check for open sites in top row to prevent comparing top
+                                  row to itself
                 if(wq.connected(xyToID(row, col), xyToID(0, j))) {
                     return true;
                 }
@@ -105,6 +126,7 @@ public class Percolation {
     }
 
     public static void main(String[] args) {
+
         return;
     }
 }
