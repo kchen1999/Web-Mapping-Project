@@ -60,7 +60,8 @@ public class Percolation {
             if (row == 0) { //top row attaches to virtual top root (of length two) first
                 wq.union(xyToID(row, col), virtualTopSiteIndex);
                 wq1.union(xyToID(row, col), virtualTopSiteIndex);
-            } else if (row == grid.length - 1) {
+            }
+            if (row == grid.length - 1) {
                 wq.union(xyToID(row, col), virtualBottomSiteIndex);
             }
             if (isOpenNeighbour(row + 1, col)) {
