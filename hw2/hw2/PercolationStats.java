@@ -48,6 +48,7 @@ public class PercolationStats {
         PercolationStats ps = new PercolationStats(20, 5000, perf);
         System.out.println(ps.mean());
         System.out.println(ps.stddev());
-        System.out.println("Confidence interval between " + ps.confidenceLow() + " " + ps.confidenceHigh());
+        System.out.println("Confidence interval between " + ps.confidenceLow() + " " +
+        ps.confidenceHigh());
     } */
 }

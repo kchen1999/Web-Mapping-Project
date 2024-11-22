@@ -5,6 +5,7 @@ import edu.princeton.cs.algs4.WeightedQuickUnionUF;
 public class Percolation {
     private boolean[][] grid;
     private WeightedQuickUnionUF wq;
+    private WeightedQuickUnionUF wq1;
     private int numOfOpenSites;
     private int virtualTopSiteIndex;
     private int virtualBottomSiteIndex;
@@ -19,11 +20,13 @@ public class Percolation {
                 grid[i][j] = false;
             }
         }
-        wq = new WeightedQuickUnionUF(N * N + 4);
+        wq = new WeightedQuickUnionUF(N * N + 3);
         virtualTopSiteIndex = N * N;
-        virtualBottomSiteIndex = N * N + 2;
         wq.union(virtualTopSiteIndex, N * N + 1);
-        wq.union(virtualBottomSiteIndex, N * N + 3);
+        virtualBottomSiteIndex = N * N + 2;
+
+        wq1 = new WeightedQuickUnionUF(N * N + 2);
+        wq1.union(virtualTopSiteIndex, N * N + 1);
         numOfOpenSites = 0;
     }
 
@@ -46,10 +49,8 @@ public class Percolation {
 
     private void connectNeighbour(int row, int col, int nRow, int nCol) {
         //if neighbour is full and current is last row, connect last row to bottom root
-        if (row == grid.length - 1 && isFull(nRow, nCol)) {
-            wq.union(xyToID(row, col), virtualBottomSiteIndex);
-        }
         wq.union(xyToID(row, col), xyToID(nRow, nCol));
+        wq1.union(xyToID(row, col), xyToID(nRow, nCol));
     }
 
     public void open(int row, int col) {
@@ -58,11 +59,10 @@ public class Percolation {
             grid[row][col] = true;
             if (row == 0) { //top row attaches to virtual top root (of length two) first
                 wq.union(xyToID(row, col), virtualTopSiteIndex);
-            } /*else if (row == grid.length - 1) {
-                //bottom row attaches to virtual bottom root (of length two) first only if it is
-                connected to the top
+                wq1.union(xyToID(row, col), virtualTopSiteIndex);
+            } else if (row == grid.length - 1) {
                 wq.union(xyToID(row, col), virtualBottomSiteIndex);
-            } */
+            }
             if (isOpenNeighbour(row + 1, col)) {
                 connectNeighbour(row, col, row + 1, col);
             }
@@ -75,17 +75,7 @@ public class Percolation {
             if (isOpenNeighbour(row, col - 1)) {
                 connectNeighbour(row, col, row, col - 1);
             }
-            //if current is connected to the top and neighbour is last row, connect bottom root
-            if (row == grid.length - 1) {
-                if (isFull(row, col) && !percolates()) {
-                    wq.union(xyToID(row, col), virtualBottomSiteIndex);
-                }
-            }
-            else if (row + 1 == grid.length - 1) {
-                if (isFull(row, col) && !percolates()) {
-                    wq.union(xyToID(row, col), virtualBottomSiteIndex);
-                }
-            }
+
             numOfOpenSites++;
         }
 
@@ -98,15 +88,7 @@ public class Percolation {
 
     public boolean isFull(int row, int col) {
         validateSite(row, col);
-        return wq.connected(xyToID(row, col), virtualTopSiteIndex);
-        /*for(int j = 0; j < grid.length; j++) { //Linear time
-            if(isOpen(0 , j)) { //check for open sites in top row to prevent comparing top
-                                  row to itself
-                if(wq.connected(xyToID(row, col), xyToID(0, j))) {
-                    return true;
-                }
-            }
-        } */
+        return wq1.connected(xyToID(row, col), virtualTopSiteIndex);
     }
 
     public int numberOfOpenSites() {
@@ -115,14 +97,6 @@ public class Percolation {
 
     public boolean percolates() {
         return wq.connected(virtualBottomSiteIndex, virtualTopSiteIndex);
-        /*for(int i = 0; i < grid.length; i++) { //Quadratic time
-            for(int j = 0; j < grid.length; j++) {
-                if(wq.connected(xyToID(0, i), xyToID(grid.length - 1, j))) {
-                    return true;
-                }
-            }
-        }
-        return false; */
     }
 
     public static void main(String[] args) {
