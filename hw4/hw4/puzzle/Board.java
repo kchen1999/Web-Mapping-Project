@@ -68,10 +68,10 @@ public class Board implements WorldState {
         int N = size();
         for (int i = 0; i < N; i++) {
             for (int j = 0; j < N; j++) {
-                if (board[i][j] != k) {
+                if (board[i][j] != k && board[i][j] != BLANK) {
                     count += 1;
                 }
-                k++;
+                k += 1;
             }
         }
         return count;
@@ -105,7 +105,7 @@ public class Board implements WorldState {
     }
 
     public int estimatedDistanceToGoal() {
-        return manhattan();
+        return hamming();
     }
 
     @Override
@@ -119,6 +119,9 @@ public class Board implements WorldState {
 
         Board board1 = (Board) y;
         int N = size();
+        if (N != board1.size()) {
+            return false;
+        }
         for (int i = 0; i < N; i++) {
             for (int j = 0; j < N; j++) {
                 if (board[i][j] != board1.board[i][j]) {
@@ -127,6 +130,11 @@ public class Board implements WorldState {
             }
         }
         return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return board.hashCode();
     }
 
     /** Returns the string representation of the board.

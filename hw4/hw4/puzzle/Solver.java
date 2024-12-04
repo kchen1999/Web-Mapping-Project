@@ -55,5 +55,4 @@ public class Solver {
         //System.out.println(list);
         return list;
     }
-
 }
