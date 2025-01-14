@@ -1,5 +1,4 @@
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -12,6 +11,7 @@ import java.util.regex.Pattern;
  * down to the priority you use to order your vertices.
  */
 public class Router {
+
     /**
      * Return a List of longs representing the shortest path from the node
      * closest to a start location and the node closest to the destination
@@ -25,7 +25,85 @@ public class Router {
      */
     public static List<Long> shortestPath(GraphDB g, double stlon, double stlat,
                                           double destlon, double destlat) {
-        return null; // FIXME
+        LinkedList<Long> list = new LinkedList<>();
+        PriorityQueue<Node> fringe = new PriorityQueue<>();
+        Set<Node> allVisitedNodes = new HashSet<>();
+        Node s = g.getNode(g.closest(stlon, stlat));
+        Node t = g.getNode(g.closest(destlon, destlat));
+        fringe.add(s);
+        s.setDistFromS(0.0);
+        allVisitedNodes.add(s);
+        while (!fringe.isEmpty()) {
+            Node v = fringe.poll();
+            list.add(v.getId());
+            if (v.getId() == t.getId()) {
+                break;
+            }
+            for (Long endId : v.getAdj().keySet()) {
+                Node w = g.getNode(endId);
+                if (list.contains(w.getId())) {
+                    continue;
+                }
+                w.setDistToT(g.distance(w.getId(), t.getId()));
+                double d = v.getDistFromS() + g.distance(v.getId(), w.getId());
+                if (d < w.getDistFromS()) {
+                    fringe.remove(w);
+                    w.setDistFromS(d);
+                    w.setPrev(v);
+                }
+                fringe.add(w);
+                allVisitedNodes.add(w);
+            }
+        }
+        list.clear();
+        while (t.getPrev() != null) {
+            list.addFirst(t.getId());
+            t = t.getPrev();
+        }
+
+        list.addFirst(s.getId());
+        for (Node n : allVisitedNodes) {
+            n.setDistFromS(Double.MAX_VALUE);
+            n.setDistToT(0.0);
+            n.setPrev(null);
+        }
+        return list;
+    }
+
+    private static int computeDirection(double prevBearing, double currentBearing) {
+        double bearing = currentBearing - prevBearing;
+        if (bearing >= -15f && bearing <= 15f) {
+            return NavigationDirection.STRAIGHT;
+        } else if (bearing >= -30f && bearing <= 30f) {
+            if (bearing < 0) {
+                return NavigationDirection.SLIGHT_LEFT;
+            }
+            return NavigationDirection.SLIGHT_RIGHT;
+        } else if (bearing >= -100f && bearing <= 100f) {
+            if (bearing < 0) {
+                return NavigationDirection.LEFT;
+            }
+            return NavigationDirection.RIGHT;
+        } else if (bearing >= 180f || bearing <= -180f) {
+            if (bearing < 0) {
+                if (bearing <= -330f) {
+                    return NavigationDirection.SLIGHT_RIGHT;
+                }
+                return NavigationDirection.RIGHT;
+            }
+            if (bearing >= 330f) {
+                return NavigationDirection.SLIGHT_LEFT;
+            }
+            return NavigationDirection.LEFT;
+        }
+        if (bearing < 0) {
+            return NavigationDirection.SHARP_LEFT;
+        }
+        return NavigationDirection.SHARP_RIGHT;
+    }
+
+    private static long getLastRouteNodeId(List<Long> route) {
+        return route.get(route.size() - 1);
     }
 
     /**
@@ -33,11 +111,40 @@ public class Router {
      * @param g The graph to use.
      * @param route The route to translate into directions. Each element
      *              corresponds to a node from the graph in the route.
-     * @return A list of NavigatiionDirection objects corresponding to the input
+     * @return A list of NavigationDirection objects corresponding to the input
      * route.
      */
     public static List<NavigationDirection> routeDirections(GraphDB g, List<Long> route) {
-        return null; // FIXME
+        List<NavigationDirection> list = new ArrayList<>();
+        int direction = NavigationDirection.START;
+        double distance = 0f;
+        long prevWayId = -1l;
+        double prevBearing = 0f;
+        Node v = null;
+        for (Long id : route) {
+            Node w = g.getNode(id);
+            if (v != null) {
+                long currentWayId = v.getAdj().get(id);
+                double currentBearing = g.bearing(v.getId(), id);
+                if (prevWayId > 0 && !g.getWay(currentWayId).equals(g.getWay(prevWayId))) {
+                    list.add(new NavigationDirection(direction, g.getWay(prevWayId), distance));
+                    direction = computeDirection(prevBearing, currentBearing);
+                    distance = g.distance(v.getId(), id);
+                    if (id == getLastRouteNodeId(route)) {
+                        list.add(new NavigationDirection(direction, g.getWay(currentWayId), distance));
+                    }
+                } else {
+                    distance += g.distance(v.getId(), id);
+                    if (id == getLastRouteNodeId(route)) {
+                        list.add(new NavigationDirection(direction, g.getWay(currentWayId), distance));
+                    }
+                }
+                prevWayId = currentWayId;
+                prevBearing = currentBearing;
+            }
+            v = w;
+        }
+        return list;
     }
 
 
@@ -92,6 +199,12 @@ public class Router {
             this.direction = STRAIGHT;
             this.way = UNKNOWN_ROAD;
             this.distance = 0.0;
+        }
+
+        public NavigationDirection(int direction, String way, double distance) {
+            this.direction = direction;
+            this.way = way;
+            this.distance = distance;
         }
 
         public String toString() {

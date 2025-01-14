@@ -9,8 +9,21 @@ import java.util.Map;
  */
 public class Rasterer {
 
+    private double[] lonDPPImageDepths;
+    private static final int N_DEPTH_LEVELS = 8;
+    private int depth;
+    private double numOfTilesAcrossDepth;
+
     public Rasterer() {
-        // YOUR CODE HERE
+        lonDPPImageDepths = new double[N_DEPTH_LEVELS];
+        double lrlon = MapServer.ROOT_LRLON;
+        double ullon = MapServer.ROOT_ULLON;
+        for (int i = 0; i < N_DEPTH_LEVELS; i++) {
+            lonDPPImageDepths[i] = calculateLonDPP(lrlon, ullon, MapServer.TILE_SIZE);
+            lrlon = lrlon - (lrlon - ullon) / 2 ;
+        }
+        depth = N_DEPTH_LEVELS - 1;
+        numOfTilesAcrossDepth = Math.pow(2, depth);
     }
 
     /**
@@ -41,12 +54,155 @@ public class Rasterer {
      * "query_success" : Boolean, whether the query was able to successfully complete; don't
      *                    forget to set this to true on success! <br>
      */
-    public Map<String, Object> getMapRaster(Map<String, Double> params) {
-        // System.out.println(params);
+
+    // Longitude is x coordinate, latitude is y coordinate
+    // d0 - 1
+    // d1 - 2
+    // d2 - 4
+    // d3 - 8
+    // d4 - 16
+    // d5 - 32
+    // d6 - 64
+    // d7 - 128
+    /*
+        Calculates longitudinal distance per pixel
+     */
+    private double calculateLonDPP(double lrlon, double ullon, double w) {
+        return (lrlon - ullon) / w;
+    }
+    /*
+        Calculates the correct depth for the query
+     */
+
+    private void initializeDepthValues(double lonDPP) {
+        depth = N_DEPTH_LEVELS - 1;
+        for (int i = 0; i < N_DEPTH_LEVELS; i++) {
+            if (lonDPPImageDepths[i] <= lonDPP) {
+                depth = i;
+                break;
+            }
+        }
+        numOfTilesAcrossDepth = Math.pow(2, depth);
+    }
+
+    private double calculateXDistBetweenTiles() {
+        return (MapServer.ROOT_LRLON - MapServer.ROOT_ULLON) / numOfTilesAcrossDepth;
+    }
+
+    private double calculateYDistBetweenTiles() {
+        return (MapServer.ROOT_ULLAT - MapServer.ROOT_LRLAT) / numOfTilesAcrossDepth;
+    }
+
+    private int computeRasterUllonXCoord(double queryBoxUllon) {
+        double xDistBetweenTiles = calculateXDistBetweenTiles();
+        if (queryBoxUllon < MapServer.ROOT_ULLON) {
+            return 0;
+        }
+        return (int) ((queryBoxUllon - MapServer.ROOT_ULLON) / xDistBetweenTiles);
+    }
+
+    private int computeRasterUllatYCoord(double queryBoxUllat) {
+        double yDistBetweenTiles = calculateYDistBetweenTiles();
+        if (queryBoxUllat > MapServer.ROOT_ULLAT) {
+            return 0;
+        }
+        return (int) ((MapServer.ROOT_ULLAT - queryBoxUllat) / yDistBetweenTiles);
+    }
+
+    private int computeRasterLrlonXCoord(double queryBoxLrlon) {
+        double xDistBetweenTiles = calculateXDistBetweenTiles();
+        double coordNum = (queryBoxLrlon - MapServer.ROOT_ULLON) / xDistBetweenTiles;
+        if (coordNum > numOfTilesAcrossDepth) {
+            return (int) numOfTilesAcrossDepth - 1;
+        }
+        return (int) coordNum;
+    }
+
+    private int computeRasterLrlatYCoord(double queryBoxLrlat) {
+        double yDistBetweenTiles = calculateYDistBetweenTiles();
+        double coordNum = (MapServer.ROOT_ULLAT - queryBoxLrlat) / yDistBetweenTiles;
+        if (coordNum > numOfTilesAcrossDepth) {
+            return (int) numOfTilesAcrossDepth - 1;
+        }
+        return (int) coordNum;
+    }
+
+    private String[][] computeRenderGrid(int rasterUllonXCoord, int rasterUllatYCoord,
+                                         int rasterLrlonXCoord, int rasterLrlatYCoord) {
+        int nRows = rasterLrlatYCoord - rasterUllatYCoord + 1;
+        int nCols = rasterLrlonXCoord - rasterUllonXCoord + 1;
+        String[][] renderGrid = new String[nRows][nCols];
+        for (int i = 0; i < nRows; i++) {
+            for (int j = 0; j < nCols; j++) {
+                renderGrid[i][j] = "d" + depth + "_x" + (j + rasterUllonXCoord) + "_y" + (i + rasterUllatYCoord) + ".png";
+            }
+        }
+        return renderGrid;
+    }
+
+    private double computeRasterUllon(int rasterUllonXCoord) {
+        double xDistBetweenTiles = calculateXDistBetweenTiles();
+        return MapServer.ROOT_ULLON + rasterUllonXCoord * xDistBetweenTiles;
+    }
+
+    private double computeRasterUllat(double rasterUllatYCoord) {
+        double yDistBetweenTiles = calculateYDistBetweenTiles();
+        return MapServer.ROOT_ULLAT - rasterUllatYCoord * yDistBetweenTiles;
+    }
+
+    private double computeRasterLrlon(double rasterLrlonXCoord) {
+        double xDistBetweenTiles = calculateXDistBetweenTiles();
+        return MapServer.ROOT_ULLON + (rasterLrlonXCoord + 1) * xDistBetweenTiles;
+    }
+
+    private double computeRasterLrlat(double rasterLrlatYCoord) {
+        double yDistBetweenTiles = calculateYDistBetweenTiles();
+        return MapServer.ROOT_ULLAT - (rasterLrlatYCoord + 1) * yDistBetweenTiles;
+    }
+
+    private Map<String, Object> getInvalidQueryResponse() {
         Map<String, Object> results = new HashMap<>();
-        System.out.println("Since you haven't implemented getMapRaster, nothing is displayed in "
-                           + "your browser.");
+        results.put("render_grid" , null);
+        results.put("raster_ul_lon", 0);
+        results.put("raster_ul_lat", 0);
+        results.put("raster_lr_lon", 0);
+        results.put("raster_lr_lat", 0);
+        results.put("depth", 0);
+        results.put("query_success", false);
         return results;
     }
 
+    /*
+        The images that you return as a String[][] when rastering must be those that:
+        Include any region of the query box.
+        Have the greatest LonDPP that is less than or equal to the LonDPP of the query box
+        (as zoomed out as possible). If the requested LonDPP is less than what is available in the data
+        files, you should use the lowest LonDPP available instead (i.e. depth 7 images).
+     */
+    public Map<String, Object> getMapRaster(Map<String, Double> params) {
+        if (params.get("lrlon") <= params.get("ullon") || params.get("lrlat") >= params.get("ullat")) {
+            return getInvalidQueryResponse();
+        } else if (params.get("lrlon") < MapServer.ROOT_ULLON || params.get("ullon") > MapServer.ROOT_LRLON) {
+            return getInvalidQueryResponse();
+        } else if (params.get("lrlat") > MapServer.ROOT_ULLAT || params.get("ullat") < MapServer.ROOT_LRLAT) {
+            return getInvalidQueryResponse();
+        }
+
+        double queryBoxLonDPP = calculateLonDPP(params.get("lrlon"), params.get("ullon"), params.get("w"));
+        initializeDepthValues(queryBoxLonDPP);
+        int rasterUllonXCoord = computeRasterUllonXCoord(params.get("ullon"));
+        int rasterUllatYCoord = computeRasterUllatYCoord(params.get("ullat"));
+        int rasterLrlonXCoord = computeRasterLrlonXCoord(params.get("lrlon"));
+        int rasterLrlatYCoord = computeRasterLrlatYCoord(params.get("lrlat"));
+
+        Map<String, Object> results = new HashMap<>();
+        results.put("render_grid" , computeRenderGrid(rasterUllonXCoord, rasterUllatYCoord, rasterLrlonXCoord, rasterLrlatYCoord));
+        results.put("raster_ul_lon", computeRasterUllon(rasterUllonXCoord));
+        results.put("raster_ul_lat", computeRasterUllat(rasterUllatYCoord));
+        results.put("raster_lr_lon", computeRasterLrlon(rasterLrlonXCoord));
+        results.put("raster_lr_lat", computeRasterLrlat(rasterLrlatYCoord));
+        results.put("depth", depth);
+        results.put("query_success", true);
+        return results;
+    }
 }

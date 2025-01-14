@@ -6,7 +6,7 @@ import java.io.IOException;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
-import java.util.ArrayList;
+import java.util.*;
 
 /**
  * Graph for storing all of the intersection (vertex) and road (edge) information.
@@ -20,7 +20,10 @@ import java.util.ArrayList;
 public class GraphDB {
     /** Your instance variables for storing the graph. You should consider
      * creating helper classes, e.g. Node, Edge, etc. */
-
+    private Map<Long, Node> vertices = new LinkedHashMap<>();
+    private Trie locations = new Trie();
+    private Set<Long> connectedNodeIds = new HashSet<>();
+    private Map<Long, String> ways = new HashMap<>();
     /**
      * Example constructor shows how to create and start an XML parser.
      * You do not need to modify this constructor, but you're welcome to do so.
@@ -42,6 +45,40 @@ public class GraphDB {
         clean();
     }
 
+    public void addLocation(Long id, String name) {
+        this.locations.add(name, id);
+    }
+
+    public void addConnectedNodeId(Long id) {
+        this.connectedNodeIds.add(id);
+    }
+
+    public void addNode(Node v) {
+        this.vertices.put(v.getId(), v);
+    }
+
+    public void addEdge(Long wayId, String way, long vId, long wId) {
+        this.ways.put(wayId, way);
+        this.vertices.get(vId).addAdj(wId, wayId);
+        this.vertices.get(wId).addAdj(vId, wayId);
+    }
+
+    public void removeNode(Node v) {
+        this.vertices.remove(v.getId());
+    }
+
+    public Node getNode(Long id) {
+        return this.vertices.get(id);
+    }
+
+    public String getWay(Long id) {
+        return this.ways.get(id);
+    }
+
+    public Trie getLocations() {
+        return this.locations;
+    }
+
     /**
      * Helper to process strings into their "cleaned" form, ignoring punctuation and capitalization.
      * @param s Input string.
@@ -55,9 +92,18 @@ public class GraphDB {
      *  Remove nodes with no connections from the graph.
      *  While this does not guarantee that any two nodes in the remaining graph are connected,
      *  we can reasonably assume this since typically roads are connected.
+     *
+     *
      */
+
     private void clean() {
-        // TODO: Your code here.
+       Iterator<Long> iter = this.vertices.keySet().iterator();
+       while (iter.hasNext()) {
+           Long id = iter.next();
+           if (!this.connectedNodeIds.contains(id)) {
+               iter.remove();
+           }
+       }
     }
 
     /**
@@ -65,8 +111,7 @@ public class GraphDB {
      * @return An iterable of id's of all vertices in the graph.
      */
     Iterable<Long> vertices() {
-        //YOUR CODE HERE, this currently returns only an empty list.
-        return new ArrayList<Long>();
+        return this.vertices.keySet();
     }
 
     /**
@@ -75,7 +120,7 @@ public class GraphDB {
      * @return An iterable of the ids of the neighbors of v.
      */
     Iterable<Long> adjacent(long v) {
-        return null;
+        return this.vertices.get(v).getAdj().keySet();
     }
 
     /**
@@ -136,7 +181,16 @@ public class GraphDB {
      * @return The id of the node in the graph closest to the target.
      */
     long closest(double lon, double lat) {
-        return 0;
+        double dist = Double.MAX_VALUE;
+        long closestVertexId = 0;
+        for (Long id : this.vertices.keySet()) {
+            double x = distance(lon(id), lat(id), lon, lat);
+            if (x < dist) {
+                dist = x;
+                closestVertexId = id;
+            }
+        }
+        return closestVertexId;
     }
 
     /**
@@ -145,7 +199,7 @@ public class GraphDB {
      * @return The longitude of the vertex.
      */
     double lon(long v) {
-        return 0;
+        return this.vertices.get(v).getLon();
     }
 
     /**
@@ -154,6 +208,6 @@ public class GraphDB {
      * @return The latitude of the vertex.
      */
     double lat(long v) {
-        return 0;
+        return this.vertices.get(v).getLat();
     }
 }

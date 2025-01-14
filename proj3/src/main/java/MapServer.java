@@ -4,12 +4,7 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.IOException;
@@ -113,6 +108,7 @@ public class MapServer {
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             /* getMapRaster() does almost all the work for this API call */
             Map<String, Object> rasteredImgParams = rasterer.getMapRaster(params);
+            System.out.println(rasteredImgParams);
 
             boolean rasterSuccess = validateRasteredImgParams(rasteredImgParams);
 
@@ -277,6 +273,8 @@ public class MapServer {
         route = new LinkedList<Long>();
     }
 
+
+
     /**
      * In linear time, collect all the names of OSM locations that prefix-match the query string.
      * @param prefix Prefix string to be searched for. Could be any case, with our without
@@ -285,7 +283,7 @@ public class MapServer {
      * cleaned <code>prefix</code>.
      */
     public static List<String> getLocationsByPrefix(String prefix) {
-        return new LinkedList<>();
+        return graph.getLocations().keysWithPrefix(prefix);
     }
 
     /**
@@ -301,7 +299,22 @@ public class MapServer {
      * "id" : Number, The id of the node. <br>
      */
     public static List<Map<String, Object>> getLocations(String locationName) {
-        return new LinkedList<>();
+        List<Long> locationIds = graph.getLocations().getLocationIds(locationName);
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (Long id : graph.vertices()) {
+            if (id == 30366199) {
+                System.out.println(id);
+            }
+        }
+        for (Long id : locationIds) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("lat", graph.lat(id));
+            map.put("lon", graph.lon(id));
+            map.put("name", locationName);
+            map.put("id", id);
+            list.add(map);
+        }
+        return list;
     }
 
     /**
