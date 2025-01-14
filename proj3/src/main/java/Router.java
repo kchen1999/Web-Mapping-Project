@@ -47,7 +47,6 @@ public class Router {
                 w.setDistToT(g.distance(w.getId(), t.getId()));
                 double d = v.getDistFromS() + g.distance(v.getId(), w.getId());
                 if (d < w.getDistFromS()) {
-                    fringe.remove(w);
                     w.setDistFromS(d);
                     w.setPrev(v);
                 }
