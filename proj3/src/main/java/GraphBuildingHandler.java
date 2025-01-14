@@ -104,7 +104,7 @@ public class GraphBuildingHandler extends DefaultHandler {
         } else if (activeState.equals("node") && qName.equals("tag") && attributes.getValue("k")
                 .equals("name")) {
             g.addLocation(lastNode.getId(), attributes.getValue("v"));
-            g.addConnectedNodeId(lastNode.getId());
+            g.addLocationNode(lastNode);
         }
     }
 

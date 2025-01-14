@@ -21,6 +21,7 @@ public class GraphDB {
     /** Your instance variables for storing the graph. You should consider
      * creating helper classes, e.g. Node, Edge, etc. */
     private Map<Long, Node> vertices = new LinkedHashMap<>();
+    private Map<Long, Node> locationVertices = new LinkedHashMap<>();
     private Trie locations = new Trie();
     private Set<Long> connectedNodeIds = new HashSet<>();
     private Map<Long, String> ways = new HashMap<>();
@@ -57,6 +58,10 @@ public class GraphDB {
         this.vertices.put(v.getId(), v);
     }
 
+    public void addLocationNode(Node v) {
+        this.locationVertices.put(v.getId(), v);
+    }
+
     public void addEdge(Long wayId, String way, long vId, long wId) {
         this.ways.put(wayId, way);
         this.vertices.get(vId).addAdj(wId, wayId);
@@ -69,6 +74,10 @@ public class GraphDB {
 
     public Node getNode(Long id) {
         return this.vertices.get(id);
+    }
+
+    public Node getLocationNode(Long id) {
+        return this.locationVertices.get(id);
     }
 
     public String getWay(Long id) {

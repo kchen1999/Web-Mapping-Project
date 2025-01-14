@@ -308,8 +308,8 @@ public class MapServer {
         }
         for (Long id : locationIds) {
             Map<String, Object> map = new HashMap<>();
-            map.put("lat", graph.lat(id));
-            map.put("lon", graph.lon(id));
+            map.put("lat", graph.getLocationNode(id).getLat());
+            map.put("lon", graph.getLocationNode(id).getLon());
             map.put("name", locationName);
             map.put("id", id);
             list.add(map);
