@@ -12,6 +12,15 @@ import java.util.regex.Pattern;
  */
 public class Router {
 
+    private static void relax(GraphDB g, PriorityQueue<Node> fringe, Node v, Node w, Node t) {
+        double d = v.getDistFromS() + g.distance(v.getId(), w.getId());
+        if (d < w.getDistFromS()) {
+            w.setDistFromS(d);
+            w.setPrev(v);
+            fringe.add(w);
+        }
+    }
+
     /**
      * Return a List of longs representing the shortest path from the node
      * closest to a start location and the node closest to the destination
@@ -35,26 +44,16 @@ public class Router {
         allVisitedNodes.add(s);
         while (!fringe.isEmpty()) {
             Node v = fringe.poll();
-            list.add(v.getId());
             if (v.getId() == t.getId()) {
                 break;
             }
             for (Long endId : v.getAdj().keySet()) {
                 Node w = g.getNode(endId);
-                if (list.contains(w.getId())) {
-                    continue;
-                }
                 w.setDistToT(g.distance(w.getId(), t.getId()));
-                double d = v.getDistFromS() + g.distance(v.getId(), w.getId());
-                if (d < w.getDistFromS()) {
-                    w.setDistFromS(d);
-                    w.setPrev(v);
-                }
-                fringe.add(w);
+                relax(g, fringe, v, w, t);
                 allVisitedNodes.add(w);
             }
         }
-        list.clear();
         while (t.getPrev() != null) {
             list.addFirst(t.getId());
             t = t.getPrev();
