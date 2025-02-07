@@ -34,8 +34,14 @@ public class MergeSort {
     /** Returns a queue of queues that each contain one item from items. */
     private static <Item extends Comparable> Queue<Queue<Item>>
             makeSingleItemQueues(Queue<Item> items) {
-        // Your code here!
-        return null;
+        Queue<Queue<Item>> queueOfQueues = new Queue<>();
+        while (!items.isEmpty()) {
+            Queue<Item> queue = new Queue<>();
+            Item item = items.dequeue();
+            queue.enqueue(item);
+            queueOfQueues.enqueue(queue);
+        }
+        return queueOfQueues;
     }
 
     /**
@@ -53,14 +59,37 @@ public class MergeSort {
      */
     private static <Item extends Comparable> Queue<Item> mergeSortedQueues(
             Queue<Item> q1, Queue<Item> q2) {
-        // Your code here!
-        return null;
+        Queue<Item> sortedQueue = new Queue<>();
+        while (!q1.isEmpty() || !q2.isEmpty()) {
+            Item minItem = getMin(q1, q2);
+            sortedQueue.enqueue(minItem);
+        }
+        return sortedQueue;
     }
 
     /** Returns a Queue that contains the given items sorted from least to greatest. */
     public static <Item extends Comparable> Queue<Item> mergeSort(
             Queue<Item> items) {
-        // Your code here!
-        return items;
+        Queue<Queue<Item>> queue = makeSingleItemQueues(items);
+        while (queue.size() != 1) {
+            Queue<Item> q1 = queue.dequeue();
+            Queue<Item> q2 = queue.dequeue();
+            queue.enqueue(mergeSortedQueues(q1, q2));
+        }
+        return queue.dequeue();
+    }
+
+    public static void main(String[] args) {
+        Queue<String> students = new Queue<String>();
+        students.enqueue("Alice");
+        students.enqueue("Vanessa");
+        students.enqueue("Ethan");
+        students.enqueue("Bob");
+        students.enqueue("Jim");
+        students.enqueue("Garry");
+        students.enqueue("Harry");
+        System.out.println(students);
+        System.out.println(mergeSort(students).toString());
+
     }
 }
