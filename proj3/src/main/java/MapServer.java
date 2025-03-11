@@ -301,11 +301,6 @@ public class MapServer {
     public static List<Map<String, Object>> getLocations(String locationName) {
         List<Long> locationIds = graph.getLocations().getLocationIds(locationName);
         List<Map<String, Object>> list = new ArrayList<>();
-        for (Long id : graph.vertices()) {
-            if (id == 30366199) {
-                System.out.println(id);
-            }
-        }
         for (Long id : locationIds) {
             Map<String, Object> map = new HashMap<>();
             map.put("lat", graph.getLocationNode(id).getLat());

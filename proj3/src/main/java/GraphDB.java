@@ -68,10 +68,6 @@ public class GraphDB {
         this.vertices.get(wId).addAdj(vId, wayId);
     }
 
-    public void removeNode(Node v) {
-        this.vertices.remove(v.getId());
-    }
-
     public Node getNode(Long id) {
         return this.vertices.get(id);
     }

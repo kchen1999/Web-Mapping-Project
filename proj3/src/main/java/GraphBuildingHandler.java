@@ -90,7 +90,6 @@ public class GraphBuildingHandler extends DefaultHandler {
         } else if (activeState.equals("way") && qName.equals("nd")) {
             wayListNodeIds.add(Long.parseLong(attributes.getValue("ref")));
 
-
         } else if (activeState.equals("way") && qName.equals("tag")) {
             String k = attributes.getValue("k");
             String v = attributes.getValue("v");
